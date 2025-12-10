@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Your Health Matters</title>
+<style>
+    body {
+        margin: 0;
+        font-family: "Poppins", sans-serif;
+        background: #c7b3ff;
+        min-height: 100vh;
+        color: #ffffffef;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    .container {
+        width: 90%;
+        max-width: 460px;
+        padding: 20px;
+    }
+    h1 { font-size: 36px; margin-bottom: 15px; font-weight: 700; }
+    p { font-size: 15px; line-height: 1.6; margin-bottom: 25px; color: #f6f2ff; }
+    input, button {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 16px;
+        outline: none;
+    }
+    input { background: rgba(255, 255, 255, 0.25); color: white; }
+    input::placeholder { color: #ffffffb5; }
+    button {
+        background: #1e3eff;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    button:hover { background: #172fcc; }
+    a { color: #fff; font-size: 14px; text-decoration: underline; display: block; margin-top: 6px; }
+    .checkbox-area { display: flex; align-items: center; gap: 10px; margin: 10px 0; justify-content: center; }
+    .checkbox-area input { width: 20px; height: 20px; accent-color: #1e3eff; }
+    #page2, #chatPage { display: none; }
+    #helloName { font-size: 32px; font-weight: 700; margin-bottom: 10px; }
+    #smallText { font-size: 18px; margin-bottom: 25px; }
+    .start-btn {
+        background: #ff4747; padding: 18px; width: 120px; height: 120px;
+        border-radius: 100%; font-weight: bold; font-size: 20px; color: #fff; cursor: pointer;
+        margin: auto; border: none;
+    }
+    .login-link { margin-top: 12px; font-size: 15px; }
+    #chatBox {
+        width: 100%; height: 60vh;
+        background: rgba(255, 255, 255, 0.18); border-radius: 8px;
+        padding: 12px; overflow-y: auto; margin-bottom: 15px;
+        color: white; text-align: left;
+    }
+    .send-container { display: flex; gap: 10px; }
+    #chatInput { flex: 1; background: rgba(255, 255, 255, 0.25); color: white; }
+    #sendBtn { width: 80px; background: #1e3eff; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 SIGNUP -->
+<div class="container" id="page1">
+    <h1>YOUR HEALTH MATTERS</h1>
+    <p>This space is made for you to express, breathe, unload, and feel supported.    
+    This does not replace professional care. Always reach out to trusted adults or professionals when needed.</p>
+
+    <input id="email" type="email" placeholder="Email" />
+    <input id="name" type="text" placeholder="Your Name" />
+    <input id="password" type="password" placeholder="Password" />
+    <input id="aiName" type="text" placeholder="Give your AI a name" />
+
+    <div class="checkbox-area">
+        <input id="agree" type="checkbox">
+        <label for="agree">I agree to the Terms and Privacy Policy</label>
+    </div>
+
+    <a href="terms.html" target="_blank">Terms of Use</a>
+    <a href="privacy.html" target="_blank">Privacy Policy</a>
+
+    <button id="nextBtn">Next</button>
+
+    <p class="login-link">
+        Already have an account? <a href="login.html">Log in</a>
+    </p>
+</div>
+
+<!-- PAGE 2 HELLO -->
+<div class="container" id="page2">
+    <div id="helloName">HELLO THERE</div>
+    <div id="smallText">this is your safe space</div>
+    <button class="start-btn" id="startBtn">START</button>
+</div>
+
+<!-- CHAT PAGE -->
+<div class="container" id="chatPage">
+    <div id="chatBox"></div>
+    <div class="send-container">
+        <input id="chatInput" type="text" placeholder="Type something...">
+        <button id="sendBtn">Send</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    let savedName = "";
+    let savedAI = "";
+    let sending = false; // prevent double sends
+
+    const nextBtn = document.getElementById("nextBtn");
+    const startBtn = document.getElementById("startBtn");
+    const sendBtn = document.getElementById("sendBtn");
+
+    nextBtn.addEventListener("click", () => {
+        const email = document.getElementById("email").value.trim();
+        const name = document.getElementById("name").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const aiName = document.getElementById("aiName").value.trim();
+        const agree = document.getElementById("agree").checked;
+
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailPattern.test(email)) { alert("Enter a valid email."); return; }
+        if (password.length < 6 || !/\d/.test(password)) { alert("Password must be at least 6 characters and include a number."); return; }
+        if (!name || !aiName) { alert("Please fill in all fields."); return; }
+        if (!agree) { alert("You must agree to continue."); return; }
+
+        savedName = name;
+        savedAI = aiName;
+        document.getElementById("helloName").textContent = `HELLO THERE, ${name.toUpperCase()}`;
+        document.getElementById("page1").style.display = "none";
+        document.getElementById("page2").style.display = "block";
+    });
+
+    startBtn.addEventListener("click", async () => {
+        document.getElementById("page2").style.display = "none";
+        document.getElementById("chatPage").style.display = "block";
+        const chat = document.getElementById("chatBox");
+
+        // CLEAR chatBox first
+        chat.innerHTML = "";
+
+        // Load previous messages from live backend only for this user
+        try {
+            const res = await fetch('https://chat-backend-2g1z.onrender.com/messages');
+            const messages = await res.json();
+
+            const userMessages = messages.filter(msg => msg.user === savedName);
+
+            if(userMessages.length === 0){
+                chat.innerHTML = `<p><strong>${savedAI}:</strong> Hey, I’m here for you. What’s on your mind?</p>`;
+            } else {
+                // Only show last 3 messages for smooth load
+                const lastMessages = userMessages.slice(-3);
+                lastMessages.forEach(msg => {
+                    chat.innerHTML += `<p><strong>${msg.user}:</strong> ${msg.userMessage}</p>`;
+                    chat.innerHTML += `<p><strong>${msg.aiName}:</strong> ${msg.aiReply}</p>`;
+                });
+            }
+            chat.scrollTop = chat.scrollHeight;
+        } catch (err) {
+            chat.innerHTML = `<p>Could not load previous messages.</p>`;
+        }
+    });
+
+    sendBtn.addEventListener("click", async () => {
+        const input = document.getElementById("chatInput");
+        const message = input.value.trim();
+        if (!message || sending) return;
+
+        sending = true;
+        try {
+            const res = await fetch('https://chat-backend-2g1z.onrender.com/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userMessage: message, userName: savedName, aiName: savedAI })
+            });
+
+            const data = await res.json();
+            const chat = document.getElementById("chatBox");
+            chat.innerHTML += `<p><strong>You:</strong> ${message}</p>`;
+            chat.innerHTML += `<p><strong>${savedAI}:</strong> ${data.reply}</p>`;
+            chat.scrollTop = chat.scrollHeight;
+            input.value = "";
+            input.focus();
+        } catch (err) {
+            alert("Error sending message. Try again.");
+        } finally {
+            sending = false;
+        }
+    });
+
+    // optional: send message on Enter key
+    document.getElementById("chatInput").addEventListener("keydown", (e) => {
+        if(e.key === "Enter") sendBtn.click();
+    });
+});
+</script>
+</body>
+</html>
